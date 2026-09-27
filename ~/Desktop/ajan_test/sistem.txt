@@ -1,0 +1,1 @@
+Darwin Ali-MacBook-Air.local 25.5.0 Darwin Kernel Version 25.5.0: Mon Apr 27 20:41:19 PDT 2026; root:xnu-12377.121.6~2/RELEASE_ARM64_T8122 arm64

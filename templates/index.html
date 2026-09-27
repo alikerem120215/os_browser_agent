@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini OS & Browser Agent Controller</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: rgba(17, 24, 39, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --primary-gradient: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            --primary-glow: rgba(59, 130, 246, 0.5);
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.12) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            background: rgba(11, 15, 25, 0.5);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--primary-gradient);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            box-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .logo-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        main {
+            display: flex;
+            flex: 1;
+            padding: 30px 40px;
+            gap: 30px;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            min-width: 450px;
+        }
+
+        .right-panel {
+            flex: 1.5;
+            display: flex;
+            flex-direction: column;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            backdrop-filter: blur(16px);
+            padding: 25px;
+            min-height: 600px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            backdrop-filter: blur(16px);
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        input[type="password"],
+        input[type="text"],
+        textarea {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: #fff;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        input[type="password"]:focus,
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .btn-toggle-visibility {
+            position: absolute;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn-toggle-visibility:hover {
+            color: #fff;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 24px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px var(--primary-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .templates-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .template-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-color);
+            padding: 10px 14px;
+            font-size: 13px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .template-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(59, 130, 246, 0.3);
+            transform: translateX(4px);
+        }
+
+        /* LOG VE ADIMLAR PANELI */
+        .logs-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 15px;
+        }
+
+        .logs-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logs-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            max-height: 650px;
+            padding-right: 8px;
+        }
+
+        /* Custom scrollbar */
+        .logs-body::-webkit-scrollbar {
+            width: 6px;
+        }
+        .logs-body::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        .logs-body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+        }
+        .logs-body::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .welcome-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            text-align: center;
+            color: var(--text-muted);
+            gap: 15px;
+            padding: 40px;
+        }
+
+        .welcome-icon {
+            font-size: 48px;
+            opacity: 0.4;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+
+        /* Step Card */
+        .step-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .step-number {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.1);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .step-type {
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .step-type.tool-call {
+            color: #3b82f6;
+        }
+
+        .step-type.response {
+            color: var(--success);
+        }
+
+        .step-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .step-desc {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Fira Code block for command & responses */
+        .code-block {
+            font-family: 'Fira Code', monospace;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 13px;
+            overflow-x: auto;
+            color: #d1d5db;
+            white-space: pre-wrap;
+        }
+
+        .code-title {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .screenshot-container {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 100%;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .screenshot-container:hover {
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.2);
+        }
+
+        .screenshot-img {
+            width: 100%;
+            display: block;
+            max-height: 300px;
+            object-fit: contain;
+            background: #111;
+        }
+
+        .screenshot-badge {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 11px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* LOADING ANIMATION */
+        .loader-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            gap: 12px;
+        }
+
+        .spinner {
+            width: 22px;
+            height: 22px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Lightbox modal for full size screenshots */
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .lightbox.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .lightbox-img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .lightbox-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-section">
+            <div class="logo-icon">🤖</div>
+            <div class="logo-title">OS & Browser Agent Controller</div>
+        </div>
+        <div class="status-badge">
+            <div class="status-dot"></div>
+            <span id="system-status">Sunucu Aktif</span>
+        </div>
+    </header>
+
+    <main>
+        <!-- SOL PANEL: GİRDİLER -->
+        <section class="left-panel">
+            <!-- API ANAHTARI -->
+            <div class="card">
+                <h3 class="card-title">🔑 Kimlik Doğrulama</h3>
+                <div class="form-group">
+                    <label for="api-key">Gemini API Anahtarı (Gemini API Key)</label>
+                    <div class="input-wrapper">
+                        <input type="password" id="api-key" placeholder="AIzaSy..." autocomplete="off">
+                        <button class="btn-toggle-visibility" id="btn-toggle-api-key">GÖSTER</button>
+                    </div>
+                    <p style="font-size: 11px; color: var(--text-muted); margin-top: 5px;">
+                        Anahtarınız tarayıcınızın lokal hafızasında saklanır, asla sunucu diskine kaydedilmez.
+                    </p>
+                </div>
+            </div>
+
+            <!-- PROMPT VE TALİMAT -->
+            <div class="card" style="flex: 1; display: flex; flex-direction: column;">
+                <h3 class="card-title">📝 Ajan Talimatı</h3>
+                <div class="form-group" style="flex: 1; display: flex; flex-direction: column;">
+                    <label for="agent-prompt">Otonom Ajan Görevi</label>
+                    <textarea id="agent-prompt" style="flex: 1;" placeholder="Örn: Yerelde test.txt adında dosya oluşturup içine sistem bilgilerini yaz. Ardından terminalde bu dosyayı okut."></textarea>
+                </div>
+                <button class="btn-primary" id="btn-send-task" style="width: 100%; margin-top: 15px;">
+                    <span>🤖 Ajan Döngüsünü Başlat</span>
+                </button>
+            </div>
+
+            <!-- HAZIR TEMPLATE'LER -->
+            <div class="card">
+                <h3 class="card-title">💡 Hazır Görev Şablonları</h3>
+                <div class="templates-container">
+                    <button class="template-btn" onclick="applyTemplate('status.txt adında bir dosya oluştur, içine \'Sistem Testi Başarılı\' yaz ve ardından terminalde cat komutuyla okut.')">
+                        📂 Dosya Oluştur ve Terminalde Oku
+                    </button>
+                    <button class="template-btn" onclick="applyTemplate('Ekran görüntüsü al ve masaüstünün görsel analizini yapıp bana ne gördüğünü kısaca açıkla.')">
+                        📸 Ekran Görüntüsü Analizi Yap
+                    </button>
+                    <button class="template-btn" onclick="applyTemplate('Terminalde ping -c 3 google.com komutunu çalıştırarak network testi yap ve gecikme süresini raporla.')">
+                        🌐 Network Testi Yap (Ping)
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SAĞ PANEL: AJAN DÖNGÜSÜ İZLEME -->
+        <section class="right-panel">
+            <div class="logs-header">
+                <div class="logs-title">⚙️ Canlı ReAct Ajan Döngüsü Monitörü</div>
+                <span style="font-size: 12px; color: var(--text-muted);" id="steps-counter">Adım: 0/15</span>
+            </div>
+
+            <div class="logs-body" id="logs-body">
+                <div class="welcome-message" id="welcome-message">
+                    <div class="welcome-icon">🧠</div>
+                    <h3>Gözlemlemeye Hazır</h3>
+                    <p>API anahtarını girdikten ve ajana bir talimat verdikten sonra, ReAct döngüsündeki canlı akıl yürütme (Reasoning) ve eylem (Acting) süreçleri burada belirecektir.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- LIGHTBOX RESİM GÖRÜNTÜLEYİCİ -->
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" id="lightbox-close">×</button>
+        <img class="lightbox-img" id="lightbox-img" src="" alt="Full size screenshot">
+    </div>
+
+    <script>
+        // Sayfa yüklendiğinde lokal hafızadan API key'i çek
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedKey = localStorage.getItem("gemini_api_key");
+            if (savedKey) {
+                document.getElementById("api-key").value = savedKey;
+            }
+            
+            // Ekran çözünürlüğünü doğrulamak için arka plan servis durumunu sorgula
+            fetch("/status")
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "active") {
+                        document.getElementById("system-status").textContent = `Aktif - Ekran: ${data.screen_resolution}`;
+                    }
+                })
+                .catch(() => {
+                    document.getElementById("system-status").innerHTML = `<span style="color: var(--error);">Servis Kapalı</span>`;
+                });
+        });
+
+        // API Key Görünürlük Ayarı
+        const btnToggleApiKey = document.getElementById("btn-toggle-api-key");
+        const apiKeyInput = document.getElementById("api-key");
+        
+        btnToggleApiKey.addEventListener("click", () => {
+            if (apiKeyInput.type === "password") {
+                apiKeyInput.type = "text";
+                btnToggleApiKey.textContent = "GİZLE";
+            } else {
+                apiKeyInput.type = "password";
+                btnToggleApiKey.textContent = "GÖSTER";
+            }
+        });
+
+        // Şablon uygulama fonksiyonu
+        function applyTemplate(text) {
+            document.getElementById("agent-prompt").value = text;
+        }
+
+        // Lightbox kontrolü
+        const lightbox = document.getElementById("lightbox");
+        const lightboxImg = document.getElementById("lightbox-img");
+        
+        function openLightbox(url) {
+            lightboxImg.src = url;
+            lightbox.classList.add("active");
+        }
+        
+        document.getElementById("lightbox-close").addEventListener("click", () => {
+            lightbox.classList.remove("active");
+        });
+        
+        lightbox.addEventListener("click", (e) => {
+            if (e.target === lightbox) {
+                lightbox.classList.remove("active");
+            }
+        });
+
+        // Ajanı Tetikleme
+        const btnSendTask = document.getElementById("btn-send-task");
+        const logsBody = document.getElementById("logs-body");
+        const stepsCounter = document.getElementById("steps-counter");
+
+        btnSendTask.addEventListener("click", async () => {
+            const apiKey = apiKeyInput.value.trim();
+            const prompt = document.getElementById("agent-prompt").value.trim();
+
+            if (!apiKey) {
+                alert("Lütfen bir Gemini API anahtarı girin.");
+                return;
+            }
+            if (!prompt) {
+                alert("Lütfen ajana yaptırmak istediğiniz görevi yazın.");
+                return;
+            }
+
+            // API key'i lokal hafızaya kaydet
+            localStorage.setItem("gemini_api_key", apiKey);
+
+            // UI Hazırla
+            btnSendTask.disabled = true;
+            logsBody.innerHTML = `
+                <div class="loader-wrapper" id="running-loader">
+                    <div class="spinner"></div>
+                    <span style="font-size: 14px; font-weight: 600; color: #3b82f6;">Ajan çalıştırılıyor, lütfen bekleyin...</span>
+                </div>
+            `;
+            stepsCounter.textContent = "Adım: Hesaplanan...";
+
+            try {
+                const response = await fetch("/agent", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Gemini-API-Key": apiKey
+                    },
+                    body: JSON.stringify({ prompt: prompt })
+                });
+
+                const data = await response.json();
+                
+                // Loader'ı kaldır
+                const loader = document.getElementById("running-loader");
+                if (loader) loader.remove();
+
+                if (data.status === "error") {
+                    logsBody.innerHTML = `
+                        <div class="step-card" style="border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.03);">
+                            <div class="step-type" style="color: var(--error);">❌ Hata Oluştu</div>
+                            <p class="step-desc">${data.message}</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Canlı adımları çiz
+                stepsCounter.textContent = `Toplam Adım: ${data.steps.length}`;
+                
+                data.steps.forEach((stepData) => {
+                    const stepCard = document.createElement("div");
+                    stepCard.className = "step-card";
+
+                    const isTool = stepData.action === "function_call";
+                    const headerHTML = `
+                        <div class="step-info">
+                            <span class="step-number">Adım ${stepData.step}</span>
+                            <span class="step-type ${isTool ? 'tool-call' : 'response'}">
+                                ${isTool ? `🛠️ Araç Çağrısı: ${stepData.function_name}` : '💬 Ajan Yanıtı'}
+                            </span>
+                        </div>
+                    `;
+
+                    let contentHTML = "";
+                    if (isTool) {
+                        // Araç çağrı detayları
+                        contentHTML = `
+                            <div class="step-details">
+                                <div class="code-title">Fonksiyon Argümanları</div>
+                                <div class="code-block">${JSON.stringify(stepData.arguments, null, 2)}</div>
+                        `;
+
+                        // Araç çıkışı
+                        const result = stepData.result || {};
+                        if (stepData.function_name === "execute_terminal_command") {
+                            contentHTML += `
+                                <div class="code-title" style="margin-top: 8px;">Terminal Çıktısı (stdout)</div>
+                                <div class="code-block" style="color: #10b981; border-color: rgba(16, 185, 129, 0.2);">${result.stdout || '(Boş Çıktı)'}</div>
+                            `;
+                            if (result.stderr) {
+                                contentHTML += `
+                                    <div class="code-title" style="margin-top: 8px; color: var(--error);">Hata Çıktısı (stderr)</div>
+                                    <div class="code-block" style="color: var(--error); border-color: rgba(239, 68, 68, 0.2);">${result.stderr}</div>
+                                `;
+                            }
+                        } else if (stepData.function_name === "capture_screen_state" && result.status === "success") {
+                            // Ekran görüntüsü linki
+                            contentHTML += `
+                                <div class="code-title" style="margin-top: 8px;">Yakalalınan Ekran Görüntüsü (Görmek için tıklayın)</div>
+                                <div class="screenshot-container" onclick="openLightbox('${result.screenshot_url}')">
+                                    <img src="${result.screenshot_url}" class="screenshot-img" alt="Captured state">
+                                    <div class="screenshot-badge">🔍 Tam Boyut Gör</div>
+                                </div>
+                            `;
+                        } else {
+                            contentHTML += `
+                                <div class="code-title" style="margin-top: 8px;">İşlem Sonucu</div>
+                                <div class="code-block">${JSON.stringify(result, null, 2)}</div>
+                            `;
+                        }
+                        
+                        contentHTML += `</div>`;
+                    } else {
+                        // Final ajan cevabı
+                        contentHTML = `
+                            <div class="step-desc" style="font-weight: 600; color: #fff;">
+                                ${stepData.response.replace(/\n/g, "<br>")}
+                            </div>
+                        `;
+                    }
+
+                    stepCard.innerHTML = headerHTML + contentHTML;
+                    logsBody.appendChild(stepCard);
+                });
+
+                // En aşağı kaydır
+                logsBody.scrollTo({
+                    top: logsBody.scrollHeight,
+                    behavior: "smooth"
+                });
+
+            } catch (err) {
+                console.error(err);
+                logsBody.innerHTML = `
+                    <div class="step-card" style="border-color: rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.03);">
+                        <div class="step-type" style="color: var(--error);">❌ Sunucu Bağlantı Hatası</div>
+                        <p class="step-desc">Flask backend sunucusuna bağlanılamadı. Lütfen sunucunun açık olduğundan emin olun.</p>
+                    </div>
+                `;
+            } finally {
+                btnSendTask.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
